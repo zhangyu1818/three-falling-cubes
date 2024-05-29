@@ -34,11 +34,11 @@ const initialInfo = {
   y: 15,
   z: 0,
   force: -20,
-  flow: 1,
+  flow: 3,
 }
 
 const interval = {
-  time: 1000,
+  time: 150,
 }
 
 /**
@@ -51,17 +51,17 @@ const cubeGeometry = new THREE.BoxGeometry(
 )
 
 const cubeMaterials = [
-  new THREE.MeshStandardMaterial({ color: 0xf87171 }),
-  new THREE.MeshStandardMaterial({ color: 0xfde047 }),
-  new THREE.MeshStandardMaterial({ color: 0xa78bfa }),
-  new THREE.MeshStandardMaterial({ color: 0xf472b6 }),
-  new THREE.MeshStandardMaterial({ color: 0x34d399 }),
-  new THREE.MeshStandardMaterial({ color: 0x8b5cf6 }),
+  new THREE.MeshLambertMaterial({ color: 0xf87171 }),
+  new THREE.MeshLambertMaterial({ color: 0xfde047 }),
+  new THREE.MeshLambertMaterial({ color: 0xa78bfa }),
+  new THREE.MeshLambertMaterial({ color: 0xf472b6 }),
+  new THREE.MeshLambertMaterial({ color: 0x34d399 }),
+  new THREE.MeshLambertMaterial({ color: 0x8b5cf6 }),
 ]
 
 const planeMesh = new THREE.Mesh(
   new THREE.PlaneGeometry(planeSize.width, planeSize.height),
-  new THREE.MeshStandardMaterial({
+  new THREE.MeshLambertMaterial({
     color: 0x60a5fa,
     side: THREE.DoubleSide,
   }),
