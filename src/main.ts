@@ -108,7 +108,7 @@ document.body.appendChild(renderer.domElement)
  */
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight)
 
-camera.position.x = -5
+camera.position.x = -20
 camera.position.y = 20
 camera.position.z = -40
 
