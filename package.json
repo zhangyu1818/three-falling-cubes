@@ -21,7 +21,6 @@
   "dependencies": {
     "@tweakpane/plugin-essentials": "^0.2.1",
     "cannon-es": "^0.20.0",
-    "cannon-es-debugger": "^1.0.0",
     "three": "^0.164.1",
     "tweakpane": "^4.0.3"
   }

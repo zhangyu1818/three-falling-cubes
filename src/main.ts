@@ -1,14 +1,17 @@
-import './style.css'
-
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Timer } from 'three/addons/misc/Timer.js'
 
-import * as CANNON from 'cannon-es'
-import CannonDebugger from 'cannon-es-debugger'
-
 import { Pane } from 'tweakpane'
 import * as Essentials from '@tweakpane/plugin-essentials'
+
+import PhysicalWorker from './worker?worker'
+
+import type { MainEvent, SyncData, RemoveData } from './interface'
+
+import './style.css'
+
+const worker = new PhysicalWorker()
 
 const scene = new THREE.Scene()
 
@@ -24,7 +27,6 @@ const cubeSize = {
 }
 
 const debug = {
-  cannonDebugEnable: false,
   shadowCameraHelperEnable: false,
 }
 
@@ -37,7 +39,7 @@ const initialInfo = {
 }
 
 const interval = {
-  time: 50,
+  time: 1000,
 }
 
 /**
@@ -124,93 +126,69 @@ const directionalLightCameraHelper = new THREE.CameraHelper(
 )
 
 /**
- * Physics
+ * Worker
  */
-const world = new CANNON.World()
-world.gravity.set(0, -9.82, 0)
-world.broadphase = new CANNON.SAPBroadphase(world)
-world.allowSleep = true
+const bodyMeshMap = new Map<string, THREE.Mesh>()
 
-const planeShape = new CANNON.Box(
-  new CANNON.Vec3(planeSize.width / 2, 1, planeSize.height / 2),
-)
-const planeBody = new CANNON.Body({
-  mass: 0,
-  // 0.05 to avoid z-fighting
-  position: new CANNON.Vec3(0, -1 + 0.05, 0),
+const isSyncData = (data: unknown): data is MainEvent<SyncData> =>
+  (data as MainEvent<unknown>).type === 'sync'
+
+const isRemoveData = (data: unknown): data is MainEvent<RemoveData> =>
+  (data as MainEvent<unknown>).type === 'remove'
+
+const requestSynFromWorker = (deltaTime: number) => {
+  worker.postMessage({
+    type: 'step',
+    payload: { deltaTime },
+  })
+}
+
+worker.postMessage({
+  type: 'init',
+  payload: { plane: planeSize, cube: cubeSize },
 })
-planeBody.addShape(planeShape)
 
-world.addBody(planeBody)
-
-const cubeBodies = new Set<CANNON.Body>()
-const bodyMeshMap = new WeakMap<CANNON.Body, THREE.Mesh>()
-
-const cubeShape = new CANNON.Box(
-  new CANNON.Vec3(cubeSize.width / 2, cubeSize.height / 2, cubeSize.depth / 2),
-)
+worker.addEventListener('message', (event) => {
+  const { data } = event
+  if (isRemoveData(data)) {
+    removeCubeMesh(data.payload)
+  } else if (isSyncData(event.data)) {
+    syncMesh(data.payload)
+  }
+})
 
 /**
  * Functions
  */
-const removeCubeBody = (cubeBody: CANNON.Body) => {
-  cubeBody.removeEventListener('sleep', onSleep)
-
-  queueMicrotask(() => {
-    if (cubeBody) {
-      cubeBodies.delete(cubeBody)
-      world.removeBody(cubeBody)
-
-      cubeBody.shapes = []
-      cubeBody.material = null
-
-      const mesh = bodyMeshMap.get(cubeBody)
-      if (mesh) {
-        scene.remove(mesh)
-        bodyMeshMap.delete(cubeBody)
-      }
-    }
-  })
+const removeCubeMesh = ({ id }: RemoveData) => {
+  const mesh = bodyMeshMap.get(id)
+  if (mesh) {
+    scene.remove(mesh)
+  }
 }
 
-const onSleep = (event: Event) => {
-  const target = event.target as unknown as CANNON.Body
-  removeCubeBody(target)
-}
-
-const syncMeshWithBody = () => {
-  cubeBodies.forEach((cubeBody) => {
-    const cubeMesh = bodyMeshMap.get(cubeBody)
+const syncMesh = ({ bodies }: SyncData) => {
+  bodies.forEach(({ id, position, quaternion }) => {
+    const cubeMesh = bodyMeshMap.get(id)
 
     if (cubeMesh) {
-      cubeMesh.position.copy(cubeBody.position)
-      cubeMesh.quaternion.copy(cubeBody.quaternion)
-    }
-
-    if (cubeBody.position.y < -50) {
-      removeCubeBody(cubeBody)
+      cubeMesh.position.set(...position)
+      cubeMesh.quaternion.set(...quaternion)
     }
   })
 }
 
 const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
-  const cubeBody = new CANNON.Body({
-    mass: 1,
-    position: new CANNON.Vec3(position.x, position.y, position.z),
-    quaternion: new CANNON.Quaternion().setFromAxisAngle(
-      new CANNON.Vec3(Math.random(), Math.random(), Math.random()).unit(),
-      Math.random() * Math.PI,
-    ),
+  const id = crypto.randomUUID()
+
+  worker.postMessage({
+    type: 'add',
+    payload: {
+      id,
+      force: initialInfo.force,
+      position: [position.x, position.y, position.z],
+    },
   })
-  cubeBody.addShape(cubeShape)
-
-  cubeBody.velocity.set(0, initialInfo.force, 0)
-
-  cubeBody.addEventListener('sleep', onSleep)
-
-  world.addBody(cubeBody)
-
-  cubeBodies.add(cubeBody)
 
   const cubeMesh = new THREE.Mesh(
     cubeGeometry,
@@ -222,14 +200,8 @@ const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
 
   scene.add(cubeMesh)
 
-  bodyMeshMap.set(cubeBody, cubeMesh)
+  bodyMeshMap.set(id, cubeMesh)
 }
-
-/**
- * Debug
- */
-// @ts-expect-error
-const cannonDebugger = new CannonDebugger(scene, world)
 
 /**
  * rAF
@@ -244,15 +216,9 @@ const tick = (timestamp: number) => {
 
   const deltaTime = timer.getDelta()
 
-  world.step(1 / 60, deltaTime, 3)
-
-  syncMeshWithBody()
+  requestSynFromWorker(deltaTime)
 
   orbitControls.update()
-
-  if (debug.cannonDebugEnable) {
-    cannonDebugger.update()
-  }
 
   renderer.render(scene, camera)
 
@@ -380,10 +346,6 @@ shadowFolder
 const debugFolder = pane.addFolder({
   title: 'Debug',
   expanded: false,
-})
-
-debugFolder.addBinding(debug, 'cannonDebugEnable', {
-  label: 'Cannon Debug Enable',
 })
 
 debugFolder
