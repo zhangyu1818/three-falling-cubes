@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@tweakpane/core": "^2.0.3",
     "@types/three": "^0.164.1",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
@@ -20,6 +21,7 @@
   "dependencies": {
     "cannon-es": "^0.20.0",
     "cannon-es-debugger": "^1.0.0",
-    "three": "^0.164.1"
+    "three": "^0.164.1",
+    "tweakpane": "^4.0.3"
   }
 }

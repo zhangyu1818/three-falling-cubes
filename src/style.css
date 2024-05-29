@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+div.tp-dfwv {
+  width: auto;
+}
+
+body {
+  @apply min-h-screen bg-sky-200;
+}
