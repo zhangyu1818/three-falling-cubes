@@ -8,6 +8,7 @@ import * as CANNON from 'cannon-es'
 import CannonDebugger from 'cannon-es-debugger'
 
 import { Pane } from 'tweakpane'
+import * as Essentials from '@tweakpane/plugin-essentials'
 
 const scene = new THREE.Scene()
 
@@ -235,6 +236,8 @@ const cannonDebugger = new CannonDebugger(scene, world)
  */
 const timer = new Timer()
 const tick = (timestamp: number) => {
+  fpsGraph.begin()
+
   requestAnimationFrame(tick)
 
   timer.update(timestamp)
@@ -252,6 +255,8 @@ const tick = (timestamp: number) => {
   }
 
   renderer.render(scene, camera)
+
+  fpsGraph.end()
 }
 
 requestAnimationFrame(tick)
@@ -284,6 +289,7 @@ createCube()
  * Tweakpane
  */
 const pane = new Pane()
+pane.registerPlugin(Essentials)
 
 pane
   .addBinding(interval, 'time', {
@@ -393,3 +399,14 @@ debugFolder
       }
     }
   })
+
+pane.addBlade({
+  view: 'separator',
+})
+
+const fpsGraph = pane.addBlade({
+  view: 'fpsgraph',
+
+  label: 'fpsgraph',
+  rows: 2,
+}) as Essentials.FpsGraphBladeApi
