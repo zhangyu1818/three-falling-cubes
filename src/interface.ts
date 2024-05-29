@@ -20,12 +20,10 @@ export interface InitData {
   }
 }
 
-export interface StepData {
-  deltaTime: number
-}
+export interface StepData {}
 
 export interface AddData {
-  id: string
+  id: number
   force: number
   position: [number, number, number]
 }
@@ -34,7 +32,7 @@ export interface AddData {
  * Main
  */
 
-export type MainEventTypes = 'sync' | 'remove'
+export type MainEventTypes = 'sync' | 'remove' | 'stop' | 'continue'
 
 export interface MainEvent<T> {
   type: MainEventTypes
@@ -42,13 +40,9 @@ export interface MainEvent<T> {
 }
 
 export interface SyncData {
-  bodies: {
-    id: string
-    position: [number, number, number]
-    quaternion: [number, number, number, number]
-  }[]
+  data: Float32Array
 }
 
 export interface RemoveData {
-  id: string
+  id: number[]
 }

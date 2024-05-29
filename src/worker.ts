@@ -13,8 +13,9 @@ world.broadphase = new CANNON.SAPBroadphase(world)
 world.allowSleep = true
 
 let cubeShape = new CANNON.Box(new CANNON.Vec3())
+let needRemoveIds = new Set<number>()
 
-const bodiesMap = new Map<CANNON.Body, string>()
+const bodiesMap = new Map<CANNON.Body, number>()
 
 /**
  * Events
@@ -69,57 +70,82 @@ const addBody = ({ id, force, position }: AddData) => {
 }
 
 const removeBody = (body: CANNON.Body) => {
+  bodiesMap.delete(body)
+
   queueMicrotask(() => {
     if (body) {
       body.shapes = []
       body.material = null
 
       world.removeBody(body)
-      bodiesMap.delete(body)
     }
   })
 }
+let lastTime: number | null = null
+const step = () => {
+  if (lastTime === null) {
+    lastTime = performance.now()
+  }
+  const deltaTime = performance.now() - lastTime
+  lastTime = performance.now()
+  world.fixedStep(1 / 60, deltaTime)
 
-const step = ({ deltaTime }: StepData) => {
-  world.step(1 / 60, deltaTime)
+  const len = world.bodies.length
 
-  self.postMessage({
-    type: 'sync',
-    payload: {
-      bodies: Array.from(bodiesMap.entries()).map(([body, id]) => {
-        if (body.position.y < -50) {
-          removeBody(body)
-          postMessageToRemoveMesh(id)
-        }
+  const data = new Float32Array(len * 8)
 
-        return {
-          id,
-          position: [body.position.x, body.position.y, body.position.z],
-          quaternion: [
-            body.quaternion.x,
-            body.quaternion.y,
-            body.quaternion.z,
-            body.quaternion.w,
-          ],
-        }
-      }),
+  let i = 0
+  for (const [body, id] of bodiesMap.entries()) {
+    if (body.position.y < -50) {
+      removeBody(body)
+      needRemoveIds.add(id)
+      continue
+    }
+
+    const index = i * 8
+
+    data[index] = id
+
+    data[index + 1] = body.position.x
+    data[index + 2] = body.position.y
+    data[index + 3] = body.position.z
+
+    data[index + 4] = body.quaternion.x
+    data[index + 5] = body.quaternion.y
+    data[index + 6] = body.quaternion.z
+    data[index + 7] = body.quaternion.w
+
+    i++
+  }
+
+  self.postMessage(
+    {
+      type: 'sync',
+      payload: {
+        data,
+      },
     },
-  })
+    // @ts-expect-error
+    [data.buffer],
+  )
+
+  requestAnimationFrame(step)
 }
 
 const onSleep = (event: Event) => {
   const body = event.target as unknown as CANNON.Body
   body.removeEventListener('sleep', onSleep)
 
+  const id = bodiesMap.get(body)
+
   removeBody(body)
 
-  const id = bodiesMap.get(body)
   if (id) {
-    postMessageToRemoveMesh(id)
+    needRemoveIds.add(id)
   }
 }
 
-const postMessageToRemoveMesh = (id: string) => {
+const postMessageToRemoveMesh = (id: number[]) => {
   self.postMessage({
     type: 'remove',
     payload: {
@@ -127,6 +153,16 @@ const postMessageToRemoveMesh = (id: string) => {
     },
   })
 }
+
+/**
+ * Dirty Check
+ */
+setInterval(() => {
+  if (needRemoveIds.size > 0) {
+    postMessageToRemoveMesh([...needRemoveIds])
+    needRemoveIds.clear()
+  }
+}, 2000)
 
 /**
  * Message Event
@@ -138,6 +174,6 @@ self.addEventListener('message', (event) => {
   } else if (isAddEvent(data)) {
     addBody(data.payload)
   } else if (isStepEvent(data)) {
-    step(data.payload)
+    step()
   }
 })

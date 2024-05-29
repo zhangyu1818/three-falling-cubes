@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { Timer } from 'three/addons/misc/Timer.js'
 
 import { Pane } from 'tweakpane'
 import * as Essentials from '@tweakpane/plugin-essentials'
@@ -128,7 +127,8 @@ const directionalLightCameraHelper = new THREE.CameraHelper(
 /**
  * Worker
  */
-const bodyMeshMap = new Map<string, THREE.Mesh>()
+const bodyMeshMap = new Map<number, THREE.Mesh>()
+let currentId = 1
 
 const isSyncData = (data: unknown): data is MainEvent<SyncData> =>
   (data as MainEvent<unknown>).type === 'sync'
@@ -136,10 +136,9 @@ const isSyncData = (data: unknown): data is MainEvent<SyncData> =>
 const isRemoveData = (data: unknown): data is MainEvent<RemoveData> =>
   (data as MainEvent<unknown>).type === 'remove'
 
-const requestSynFromWorker = (deltaTime: number) => {
+const requestSynFromWorker = () => {
   worker.postMessage({
     type: 'step',
-    payload: { deltaTime },
   })
 }
 
@@ -161,31 +160,53 @@ worker.addEventListener('message', (event) => {
  * Functions
  */
 const removeCubeMesh = ({ id }: RemoveData) => {
-  const mesh = bodyMeshMap.get(id)
-  if (mesh) {
-    scene.remove(mesh)
+  for (const value of id) {
+    const mesh = bodyMeshMap.get(value)
+    if (mesh) {
+      scene.remove(mesh)
+    }
   }
 }
 
-const syncMesh = ({ bodies }: SyncData) => {
-  bodies.forEach(({ id, position, quaternion }) => {
+const syncMesh = ({ data }: SyncData) => {
+  const len = data.length / 8
+  for (let i = 0; i < len; i++) {
+    const index = i * 8
+    const id = data[index]
+
+    if (id === 0) {
+      break
+    }
+
+    const position = new THREE.Vector3(
+      data[index + 1],
+      data[index + 2],
+      data[index + 3],
+    )
+    const quaternion = new THREE.Quaternion(
+      data[index + 4],
+      data[index + 5],
+      data[index + 6],
+      data[index + 7],
+    )
+
     const cubeMesh = bodyMeshMap.get(id)
 
     if (cubeMesh) {
-      cubeMesh.position.set(...position)
-      cubeMesh.quaternion.set(...quaternion)
+      cubeMesh.position.copy(position)
+      cubeMesh.quaternion.copy(quaternion)
     }
-  })
+  }
 }
 
 const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
-  const id = crypto.randomUUID()
+  const id = currentId++
 
   worker.postMessage({
     type: 'add',
     payload: {
       id,
-      force: initialInfo.force,
+      force: initialInfo.force * Math.max(initialInfo.flow / 3, 1),
       position: [position.x, position.y, position.z],
     },
   })
@@ -206,17 +227,12 @@ const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
 /**
  * rAF
  */
-const timer = new Timer()
-const tick = (timestamp: number) => {
+requestSynFromWorker()
+
+const tick = () => {
   fpsGraph.begin()
 
   requestAnimationFrame(tick)
-
-  timer.update(timestamp)
-
-  const deltaTime = timer.getDelta()
-
-  requestSynFromWorker(deltaTime)
 
   orbitControls.update()
 
@@ -226,7 +242,6 @@ const tick = (timestamp: number) => {
 }
 
 requestAnimationFrame(tick)
-
 /**
  * Create Cube
  */
@@ -236,13 +251,16 @@ const createCube = () => {
   clearInterval(id)
   id = setInterval(() => {
     for (let i = 0; i < initialInfo.flow; i++) {
-      const offsetX = Math.random() - 0.5
-      const offsetZ = Math.random() - 0.5
+      const angle = Math.random() * 2 * Math.PI
+      const r = (initialInfo.flow + 1) * Math.sqrt(Math.random())
+      const offsetX = r * Math.cos(angle)
+      const offsetZ = r * Math.sin(angle)
+
       createCubeMeshWithPhysics(
         new THREE.Vector3(
-          initialInfo.x + offsetX + offsetX < 0 ? -i : i,
-          initialInfo.y + Math.random() * 2,
-          initialInfo.z + offsetZ + offsetZ < 0 ? -i : i,
+          initialInfo.x + offsetX,
+          initialInfo.y + Math.random() * (2 + initialInfo.flow),
+          initialInfo.z + offsetZ,
         ),
       )
     }
