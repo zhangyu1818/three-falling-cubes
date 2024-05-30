@@ -293,7 +293,7 @@ pane.registerPlugin(Essentials)
 pane
   .addBinding(interval, 'time', {
     label: 'Interval',
-    min: 0,
+    min: 50,
     max: 1000,
     step: 50,
   })
@@ -306,7 +306,7 @@ pane
 pane.addBinding(initialInfo, 'flow', {
   label: 'Flow',
   min: 1,
-  max: 50,
+  max: 100,
   step: 1,
 })
 
