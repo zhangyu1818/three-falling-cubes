@@ -34,12 +34,14 @@ RAPIER.init().then(() => {
   const init = ({ plane, cube }: InitData) => {
     const { width, height } = plane
 
-    const groundColliderDesc = RAPIER.ColliderDesc.cuboid(
+    const planeBodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(0, -1, 0)
+    const planeBody = world.createRigidBody(planeBodyDesc)
+    const planeColliderDesc = RAPIER.ColliderDesc.cuboid(
       width / 2,
-      0,
+      1,
       height / 2,
     )
-    world.createCollider(groundColliderDesc)
+    world.createCollider(planeColliderDesc, planeBody)
 
     cubeColliderDesc = RAPIER.ColliderDesc.cuboid(
       cube.width / 2,

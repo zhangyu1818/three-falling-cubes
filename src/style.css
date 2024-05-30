@@ -7,7 +7,7 @@ div.tp-dfwv {
 }
 
 body {
-  @apply min-h-screen bg-sky-200;
+  @apply min-h-screen bg-sky-200 overflow-hidden;
 }
 
 #loading-text {

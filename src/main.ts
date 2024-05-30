@@ -218,7 +218,7 @@ const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
     type: 'add',
     payload: {
       id,
-      force: initialInfo.force * Math.max(initialInfo.flow / 3, 1),
+      force: initialInfo.force * Math.min(Math.max(initialInfo.flow / 3, 1), 3),
       position: [position.x, position.y, position.z],
     },
   })
@@ -263,7 +263,9 @@ const createCube = () => {
   id = setInterval(() => {
     for (let i = 0; i < initialInfo.flow; i++) {
       const angle = Math.random() * 2 * Math.PI
-      const r = (initialInfo.flow + 1) * Math.sqrt(Math.random())
+      const r =
+        Math.min(initialInfo.flow + 1, planeSize.width / 2) *
+        Math.sqrt(Math.random())
       const offsetX = r * Math.cos(angle)
       const offsetZ = r * Math.sin(angle)
 
@@ -300,7 +302,7 @@ pane
 pane.addBinding(initialInfo, 'flow', {
   label: 'Create Flow',
   min: 1,
-  max: 10,
+  max: 50,
   step: 1,
 })
 
