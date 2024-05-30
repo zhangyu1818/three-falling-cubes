@@ -411,6 +411,6 @@ pane.addBlade({
 const fpsGraph = pane.addBlade({
   view: 'fpsgraph',
 
-  label: 'fpsgraph',
+  label: 'FPS',
   rows: 2,
 }) as Essentials.FpsGraphBladeApi
