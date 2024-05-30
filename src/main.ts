@@ -63,12 +63,12 @@ const shapeMaterials = [
 ]
 
 const planeMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(planeSize.width, planeSize.height),
+  new THREE.BoxGeometry(planeSize.width, planeSize.height, 1),
   new THREE.MeshLambertMaterial({
     color: 0x60a5fa,
-    side: THREE.DoubleSide,
   }),
 )
+planeMesh.position.y = -0.5
 planeMesh.rotation.x = -Math.PI / 2
 planeMesh.receiveShadow = true
 
