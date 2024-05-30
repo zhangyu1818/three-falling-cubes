@@ -34,11 +34,11 @@ const initialInfo = {
   y: 15,
   z: 0,
   force: -20,
-  flow: 1,
+  flow: 5,
 }
 
 const interval = {
-  time: 1000,
+  time: 200,
 }
 
 /**
