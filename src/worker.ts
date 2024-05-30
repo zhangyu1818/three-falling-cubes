@@ -12,6 +12,7 @@ RAPIER.init().then(() => {
   const world = new RAPIER.World({ x: 0, y: -9.82, z: 0 })
 
   let cubeColliderDesc = RAPIER.ColliderDesc.cuboid(1, 1, 1)
+  let sphereColliderDesc = RAPIER.ColliderDesc.ball(1)
 
   const bodiesMap = new Map<any, number>()
   const needRemoveIds = new Set<number>()
@@ -48,19 +49,21 @@ RAPIER.init().then(() => {
       cube.height / 2,
       cube.depth / 2,
     )
+    sphereColliderDesc = RAPIER.ColliderDesc.ball(cube.depth / 2)
   }
 
-  const addBody = ({ id, force, position }: AddData) => {
-    const cubeBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(
-      ...position,
+  const addBody = ({ id, shape, force, position }: AddData) => {
+    const bodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(...position)
+
+    const body = world.createRigidBody(bodyDesc)
+    world.createCollider(
+      shape === 'cube' ? cubeColliderDesc : sphereColliderDesc,
+      body,
     )
 
-    const cubeBody = world.createRigidBody(cubeBodyDesc)
-    world.createCollider(cubeColliderDesc, cubeBody)
+    body.setLinvel({ x: 0, y: force, z: 0 }, true)
 
-    cubeBody.setLinvel({ x: 0, y: force, z: 0 }, true)
-
-    bodiesMap.set(cubeBody, id)
+    bodiesMap.set(body, id)
   }
 
   const removeBody = (body: any) => {

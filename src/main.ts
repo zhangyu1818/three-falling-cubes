@@ -35,6 +35,7 @@ const initialInfo = {
   z: 0,
   force: -20,
   flow: 5,
+  shape: 'cube',
 }
 
 const interval = {
@@ -50,7 +51,9 @@ const cubeGeometry = new THREE.BoxGeometry(
   cubeSize.depth,
 )
 
-const cubeMaterials = [
+const sphereGeometry = new THREE.SphereGeometry(cubeSize.depth / 2, 32, 32)
+
+const shapeMaterials = [
   new THREE.MeshLambertMaterial({ color: 0xf87171 }),
   new THREE.MeshLambertMaterial({ color: 0xfde047 }),
   new THREE.MeshLambertMaterial({ color: 0xa78bfa }),
@@ -211,29 +214,30 @@ const syncMesh = ({ data }: SyncData) => {
   }
 }
 
-const createCubeMeshWithPhysics = (position: THREE.Vector3) => {
+const createShapeMeshWithPhysics = (position: THREE.Vector3) => {
   const id = currentId++
 
   worker.postMessage({
     type: 'add',
     payload: {
       id,
+      shape: initialInfo.shape,
       force: initialInfo.force * Math.min(Math.max(initialInfo.flow / 3, 1), 3),
       position: [position.x, position.y, position.z],
     },
   })
 
-  const cubeMesh = new THREE.Mesh(
-    cubeGeometry,
-    cubeMaterials[Math.floor(Math.random() * cubeMaterials.length)],
+  const mesh = new THREE.Mesh(
+    initialInfo.shape === 'cube' ? cubeGeometry : sphereGeometry,
+    shapeMaterials[Math.floor(Math.random() * shapeMaterials.length)],
   )
 
-  cubeMesh.position.copy(position)
-  cubeMesh.castShadow = true
+  mesh.position.copy(position)
+  mesh.castShadow = true
 
-  scene.add(cubeMesh)
+  scene.add(mesh)
 
-  bodyMeshMap.set(id, cubeMesh)
+  bodyMeshMap.set(id, mesh)
 }
 
 /**
@@ -269,7 +273,7 @@ const createCube = () => {
       const offsetX = r * Math.cos(angle)
       const offsetZ = r * Math.sin(angle)
 
-      createCubeMeshWithPhysics(
+      createShapeMeshWithPhysics(
         new THREE.Vector3(
           initialInfo.x + offsetX,
           initialInfo.y + Math.random() * (2 + initialInfo.flow),
@@ -288,7 +292,7 @@ pane.registerPlugin(Essentials)
 
 pane
   .addBinding(interval, 'time', {
-    label: 'Create Interval',
+    label: 'Interval',
     min: 0,
     max: 1000,
     step: 50,
@@ -300,14 +304,14 @@ pane
   })
 
 pane.addBinding(initialInfo, 'flow', {
-  label: 'Create Flow',
+  label: 'Flow',
   min: 1,
   max: 50,
   step: 1,
 })
 
 pane.addBinding({ initialInfo }, 'initialInfo', {
-  label: 'Initial Position',
+  label: 'Position',
   x: {
     min: -10,
     max: 10,
@@ -326,10 +330,18 @@ pane.addBinding({ initialInfo }, 'initialInfo', {
 })
 
 pane.addBinding(initialInfo, 'force', {
-  label: 'Initial Force',
+  label: 'Force',
   min: -50,
   max: 50,
   step: 1,
+})
+
+pane.addBinding(initialInfo, 'shape', {
+  label: 'Shape',
+  options: {
+    Cube: 'cube',
+    Sphere: 'sphere',
+  },
 })
 
 const shadowFolder = pane.addFolder({

@@ -25,6 +25,7 @@ export interface StepData {}
 export interface AddData {
   id: number
   force: number
+  shape: 'cube' | 'sphere'
   position: [number, number, number]
 }
 
