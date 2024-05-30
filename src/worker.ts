@@ -1,4 +1,3 @@
-import type { RigidBody } from '@dimforge/rapier3d'
 import type {
   WorkerMessageData,
   InitData,
@@ -14,7 +13,7 @@ RAPIER.init().then(() => {
 
   let cubeColliderDesc = RAPIER.ColliderDesc.cuboid(1, 1, 1)
 
-  const bodiesMap = new Map<RigidBody, number>()
+  const bodiesMap = new Map<any, number>()
   const needRemoveIds = new Set<number>()
 
   /**
@@ -62,7 +61,7 @@ RAPIER.init().then(() => {
     bodiesMap.set(cubeBody, id)
   }
 
-  const removeBody = (body: RigidBody) => {
+  const removeBody = (body: any) => {
     if (body) {
       const id = bodiesMap.get(body)
       if (id) {
