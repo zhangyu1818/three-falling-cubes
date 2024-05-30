@@ -276,7 +276,8 @@ const createCube = () => {
       createShapeMeshWithPhysics(
         new THREE.Vector3(
           initialInfo.x + offsetX,
-          initialInfo.y + Math.random() * (2 + initialInfo.flow),
+          initialInfo.y +
+            Math.random() * Math.min(2 + initialInfo.flow, planeSize.width),
           initialInfo.z + offsetZ,
         ),
       )
