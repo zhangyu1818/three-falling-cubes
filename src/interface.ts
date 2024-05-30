@@ -32,7 +32,7 @@ export interface AddData {
  * Main
  */
 
-export type MainEventTypes = 'sync' | 'remove' | 'stop' | 'continue'
+export type MainEventTypes = 'sync' | 'remove' | 'loaded'
 
 export interface MainEvent<T> {
   type: MainEventTypes

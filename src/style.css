@@ -9,3 +9,7 @@ div.tp-dfwv {
 body {
   @apply min-h-screen bg-sky-200;
 }
+
+#loading-text {
+  @apply w-screen h-screen flex justify-center items-center;
+}
