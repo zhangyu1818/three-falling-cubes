@@ -234,6 +234,7 @@ const createShapeMeshWithPhysics = (position: THREE.Vector3) => {
 
   mesh.position.copy(position)
   mesh.castShadow = true
+  mesh.receiveShadow = true
 
   scene.add(mesh)
 
@@ -307,7 +308,7 @@ pane
 pane.addBinding(initialInfo, 'flow', {
   label: 'Flow',
   min: 1,
-  max: 100,
+  max: 200,
   step: 1,
 })
 
