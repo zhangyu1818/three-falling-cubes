@@ -88,7 +88,7 @@ RAPIER.init().then(() => {
     for (const [body, id] of bodiesMap.entries()) {
       const position = body.translation()
       const rotation = body.rotation()
-      if (position.y < -50) {
+      if (position.y < -50 || body.isSleeping()) {
         removeBody(body)
         needRemoveIds.add(id)
         continue
